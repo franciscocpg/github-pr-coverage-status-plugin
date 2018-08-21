@@ -14,22 +14,21 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-*/
+ */
 package com.github.terma.jenkins.githubprcoveragestatus;
 
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import javax.annotation.Nonnull;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
-
-import javax.annotation.Nonnull;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @SuppressWarnings("WeakerAccess")
 public class Configuration extends AbstractDescribableImpl<Configuration> {
@@ -51,6 +50,10 @@ public class Configuration extends AbstractDescribableImpl<Configuration> {
 
     public static int getGreenThreshold() {
         return DESCRIPTOR.getGreenThreshold();
+    }
+
+    public static Boolean isShowPackageDiff() {
+        return DESCRIPTOR.isShowPackageDiff();
     }
 
     public static String getPersonalAccessToken() {
@@ -81,6 +84,10 @@ public class Configuration extends AbstractDescribableImpl<Configuration> {
         DESCRIPTOR.set(repo, coverage);
     }
 
+    public static void setMasterCoverage(String repo, Map<String, Map<String, PackageCoverage>> coverageByProjectPackage) {
+        DESCRIPTOR.setByProjectPackage(repo, coverageByProjectPackage);
+    }
+
     @Override
     public ConfigurationDescriptor getDescriptor() {
         return DESCRIPTOR;
@@ -93,11 +100,14 @@ public class Configuration extends AbstractDescribableImpl<Configuration> {
         private static final int DEFAULT_GREEN_THRESHOLD = 90;
 
         private final Map<String, Float> coverageByRepo = new ConcurrentHashMap<String, Float>();
+        private final Map<String, Map<String, Map<String, PackageCoverage>>> coverageByRepoAndProjectPackage
+                = new ConcurrentHashMap<String, Map<String, Map<String, PackageCoverage>>>();
 
         private boolean disableSimpleCov;
         private String gitHubApiUrl;
         private String personalAccessToken;
         private String jenkinsUrl;
+        private boolean showPackageDiff;
         private boolean privateJenkinsPublicGitHub;
         private boolean useSonarForMasterCoverage;
         private String sonarUrl;
@@ -127,6 +137,16 @@ public class Configuration extends AbstractDescribableImpl<Configuration> {
             save();
         }
 
+        @Nonnull
+        public Map<String, Map<String, Map<String, PackageCoverage>>> getCoverageAndProjectPackage() {
+            return coverageByRepoAndProjectPackage;
+        }
+
+        public void setByProjectPackage(String repo, Map<String, Map<String, PackageCoverage>> coverageByProjectPackage) {
+            coverageByRepoAndProjectPackage.put(repo, coverageByProjectPackage);
+            save();
+        }
+
         @Override
         public String getGitHubApiUrl() {
             return gitHubApiUrl;
@@ -145,6 +165,11 @@ public class Configuration extends AbstractDescribableImpl<Configuration> {
         @Override
         public int getGreenThreshold() {
             return greenThreshold;
+        }
+
+        @Override
+        public boolean isShowPackageDiff() {
+            return showPackageDiff;
         }
 
         @Override
@@ -192,6 +217,7 @@ public class Configuration extends AbstractDescribableImpl<Configuration> {
             yellowThreshold = NumberUtils.toInt(formData.getString("yellowThreshold"), DEFAULT_YELLOW_THRESHOLD);
             greenThreshold = NumberUtils.toInt(formData.getString("greenThreshold"), DEFAULT_GREEN_THRESHOLD);
             jenkinsUrl = StringUtils.trimToNull(formData.getString("jenkinsUrl"));
+            showPackageDiff = BooleanUtils.toBoolean(formData.getString("showPackageDiff"));
             privateJenkinsPublicGitHub = BooleanUtils.toBoolean(formData.getString("privateJenkinsPublicGitHub"));
             useSonarForMasterCoverage = BooleanUtils.toBoolean(formData.getString("useSonarForMasterCoverage"));
             disableSimpleCov = BooleanUtils.toBoolean(formData.getString("disableSimpleCov"));

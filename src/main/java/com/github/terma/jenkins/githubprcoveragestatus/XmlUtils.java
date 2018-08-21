@@ -14,26 +14,28 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-*/
+ */
 package com.github.terma.jenkins.githubprcoveragestatus;
 
-import org.w3c.dom.Document;
-import org.xml.sax.EntityResolver;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.StringReader;
+import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathFactory;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.StringReader;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 public class XmlUtils {
 
-    public static String findInXml(String xml, String xpath) {
+    private static Object evaluate(String xml, String xpath, QName qname) {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
@@ -51,10 +53,22 @@ public class XmlUtils {
             Document doc = builder.parse(new InputSource(new ByteArrayInputStream(xml.getBytes("utf-8"))));
             XPathFactory xPathfactory = XPathFactory.newInstance();
             XPathExpression expr = xPathfactory.newXPath().compile(xpath);
-            return (String) expr.evaluate(doc, XPathConstants.STRING);
+            return expr.evaluate(doc, qname);
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }
+    }
+
+    public static String findInXml(String xml, String xpath) {
+        return (String) evaluate(xml, xpath, XPathConstants.STRING);
+    }
+
+    public static NodeList findNodeInXml(String xml, String xpath) {
+        return (NodeList) evaluate(xml, xpath, XPathConstants.NODESET);
+    }
+
+    public static String getNodeAttributeValue(Node node, String attribute) {
+        return node.getAttributes().getNamedItem(attribute).getNodeValue();
     }
 
 }

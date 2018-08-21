@@ -14,7 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-*/
+ */
 package com.github.terma.jenkins.githubprcoveragestatus;
 
 import hudson.Extension;
@@ -28,24 +28,27 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.util.Collections;
+import java.util.Map;
+import javax.annotation.Nonnull;
 import jenkins.tasks.SimpleBuildStep;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
-import javax.annotation.Nonnull;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.util.Map;
-
 /**
- * Build step to publish pull request coverage status message to GitHub pull request.
+ * Build step to publish pull request coverage status message to GitHub pull
+ * request.
  * <p>
  * Workflow:
  * <ul>
- * <li>find coverage of current build and assume it as pull request coverage</li>
- * <li>find master coverage for repository URL could be taken by {@link MasterCoverageAction} or Sonar {@link Configuration}</li>
+ * <li>find coverage of current build and assume it as pull request
+ * coverage</li>
+ * <li>find master coverage for repository URL could be taken by
+ * {@link MasterCoverageAction} or Sonar {@link Configuration}</li>
  * <li>Publish nice status message to GitHub PR page</li>
  * </ul>
  *
@@ -115,14 +118,31 @@ public class CompareCoverageAction extends Recorder implements SimpleBuildStep {
         final float coverage = ServiceRegistry.getCoverageRepository(settingsRepository.isDisableSimpleCov()).get(workspace);
         buildLog.println(BUILD_LOG_PREFIX + "build coverage: " + coverage);
 
+        Map<String, Map<String, PackageCoverage>> coverageByProjectPackage = Collections.EMPTY_MAP;
+        Map<String, Map<String, PackageCoverage>> masterCoverageByProjectPackage = Collections.EMPTY_MAP;
+        if (settingsRepository.isShowPackageDiff()) {
+            buildLog.println(BUILD_LOG_PREFIX + "getting master project package coverage...");
+            MasterCoverageByProjectPackageRepository masterCoverageByProjectPackageRepository
+                    = ServiceRegistry.getMasterCoverageByProjectPackageRepository(buildLog, sonarLogin, sonarPassword);
+            masterCoverageByProjectPackage = masterCoverageByProjectPackageRepository.get(gitUrl);
+            buildLog.println(BUILD_LOG_PREFIX + "got master project package coverage");
+
+            buildLog.println(BUILD_LOG_PREFIX + "collecting PR project package coverage...");
+            coverageByProjectPackage = ServiceRegistry
+                    .getCoverageByProjectPackageRepository()
+                    .get(workspace);
+            buildLog.println(BUILD_LOG_PREFIX + "project package coverage collected");
+        }
+
         final Message message = new Message(coverage, masterCoverage);
         buildLog.println(BUILD_LOG_PREFIX + message.forConsole());
 
         final String buildUrl = Utils.getBuildUrl(build, listener);
 
         String jenkinsUrl = settingsRepository.getJenkinsUrl();
-        if (jenkinsUrl == null) jenkinsUrl = Utils.getJenkinsUrlFromBuildUrl(buildUrl);
-
+        if (jenkinsUrl == null) {
+            jenkinsUrl = Utils.getJenkinsUrlFromBuildUrl(buildUrl);
+        }
 
         try {
             final String comment = message.forComment(

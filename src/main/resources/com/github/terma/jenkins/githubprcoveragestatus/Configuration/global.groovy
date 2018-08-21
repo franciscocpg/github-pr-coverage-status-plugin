@@ -28,6 +28,10 @@ f.section(title: descriptor.displayName) {
         f.textbox()
     }
 
+    f.entry(field: "showPackageDiff", title: _("Show package difference")) {
+        f.checkbox()
+    }
+
     f.entry(field: "useSonarForMasterCoverage", title: _("Use Sonar for master coverage")) {
         f.checkbox()
     }

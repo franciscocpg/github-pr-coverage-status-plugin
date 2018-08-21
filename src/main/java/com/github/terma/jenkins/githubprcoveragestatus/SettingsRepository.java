@@ -12,6 +12,8 @@ interface SettingsRepository {
 
     int getGreenThreshold();
 
+    boolean isShowPackageDiff();
+
     boolean isPrivateJenkinsPublicGitHub();
 
     boolean isUseSonarForMasterCoverage();

@@ -14,7 +14,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-*/
+ */
 package com.github.terma.jenkins.githubprcoveragestatus;
 
 import java.io.PrintStream;
@@ -22,12 +22,16 @@ import java.io.PrintStream;
 public class ServiceRegistry {
 
     private static MasterCoverageRepository masterCoverageRepository;
+    private static MasterCoverageByProjectPackageRepository masterCoverageByProjectPackageRepository;
     private static CoverageRepository coverageRepository;
+    private static CoverageByProjectPackageRepository coverageByProjectPackageRepository;
     private static SettingsRepository settingsRepository;
     private static PullRequestRepository pullRequestRepository;
 
     public static MasterCoverageRepository getMasterCoverageRepository(PrintStream buildLog, final String login, final String password) {
-        if (masterCoverageRepository != null) return masterCoverageRepository;
+        if (masterCoverageRepository != null) {
+            return masterCoverageRepository;
+        }
 
         if (Configuration.isUseSonarForMasterCoverage()) {
             final String sonarUrl = Configuration.getSonarUrl();
@@ -51,12 +55,33 @@ public class ServiceRegistry {
         ServiceRegistry.masterCoverageRepository = masterCoverageRepository;
     }
 
+    public static MasterCoverageByProjectPackageRepository getMasterCoverageByProjectPackageRepository(PrintStream buildLog, final String login, final String password) {
+        if (masterCoverageByProjectPackageRepository != null) {
+            return masterCoverageByProjectPackageRepository;
+        }
+
+        buildLog.println("use default coverage repo");
+        return new BuildMasterCoverageByProjectPackageRepository(buildLog);
+    }
+
+    public static void setMasterCoverageByProjectPackageRepository(MasterCoverageByProjectPackageRepository masterCoverageByProjectPackageRepository) {
+        ServiceRegistry.masterCoverageByProjectPackageRepository = masterCoverageByProjectPackageRepository;
+    }
+
     public static CoverageRepository getCoverageRepository(final boolean disableSimpleCov) {
         return coverageRepository != null ? coverageRepository : new GetCoverageCallable(disableSimpleCov);
     }
 
     public static void setCoverageRepository(CoverageRepository coverageRepository) {
         ServiceRegistry.coverageRepository = coverageRepository;
+    }
+
+    public static CoverageByProjectPackageRepository getCoverageByProjectPackageRepository() {
+        return coverageByProjectPackageRepository != null ? coverageByProjectPackageRepository : new GetCoverageByProjectPackageCallable();
+    }
+
+    public static void setCoverageByProjectPackageRepository(CoverageByProjectPackageRepository coverageByProjectPackageRepository) {
+        ServiceRegistry.coverageByProjectPackageRepository = coverageByProjectPackageRepository;
     }
 
     public static SettingsRepository getSettingsRepository() {

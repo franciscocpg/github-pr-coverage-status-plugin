@@ -14,13 +14,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-*/
+ */
 package com.github.terma.jenkins.githubprcoveragestatus;
 
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.io.IOException;
 
 public class CloverParserTest {
 
@@ -54,6 +56,54 @@ public class CloverParserTest {
                 "/com/github/terma/jenkins/githubprcoveragestatus/CloverParserTest/clover-zero-statements.xml").getFile();
 
         Assert.assertEquals(0, new CloverParser().get(filePath), 0.1);
+    }
+
+    @Test
+    public void extractCoverageByPackageFromCloverReport() throws IOException {
+        String filePath = CloverParserTest.class.getResource(
+                "/com/github/terma/jenkins/githubprcoveragestatus/CloverParserTest/clover-package.xml").getFile();
+
+        Map<String, Map<String, PackageCoverage>> coverageByProjectPackage = new CloverParser().getByProjectPackage(filePath);
+
+        Assert.assertEquals(1, coverageByProjectPackage.size());
+        Assert.assertEquals("BankAccount", coverageByProjectPackage.keySet().iterator().next());
+
+        Map<String, PackageCoverage> coverageByPackage = coverageByProjectPackage.get("BankAccount");
+        Assert.assertEquals(2, coverageByPackage.size());
+        Iterator<String> keys = coverageByPackage.keySet().iterator();
+
+        Assert.assertEquals("bank.controller", keys.next());
+
+        PackageCoverage packageCoverage = coverageByPackage.get("bank.controller");
+        Assert.assertEquals(0.5494506f, packageCoverage.getCoverage(), 0.0f);
+
+        Map<String, Float> filesCoverage = packageCoverage.getFilesCoverage();
+        Assert.assertEquals(2, filesCoverage.size());
+
+        Set<Map.Entry<String, Float>> entries = filesCoverage.entrySet();
+
+        Iterator<Map.Entry<String, Float>> it = entries.iterator();
+        Map.Entry<String, Float> entry = it.next();
+        Assert.assertEquals("account.js", entry.getKey());
+        Assert.assertEquals(0.375f, entry.getValue(), 0.0f);
+
+        entry = it.next();
+        Assert.assertEquals("bank.js", entry.getKey());
+        Assert.assertEquals(0.6f, entry.getValue(), 0.0f);
+
+        Assert.assertEquals("bank.service", keys.next());
+
+        packageCoverage = coverageByPackage.get("bank.service");
+        Assert.assertEquals(1f, packageCoverage.getCoverage(), 0.1f);
+
+        filesCoverage = packageCoverage.getFilesCoverage();
+        Assert.assertEquals(1, filesCoverage.size());
+
+        entries = filesCoverage.entrySet();
+
+        entry = entries.iterator().next();
+        Assert.assertEquals("bank.js", entry.getKey());
+        Assert.assertEquals(1f, entry.getValue(), 0.1f);
     }
 
 }

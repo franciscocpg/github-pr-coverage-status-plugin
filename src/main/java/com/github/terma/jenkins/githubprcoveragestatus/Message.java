@@ -14,9 +14,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-*/
+ */
 package com.github.terma.jenkins.githubprcoveragestatus;
 
+import java.util.Map;
 import org.apache.commons.httpclient.URIException;
 import org.apache.commons.httpclient.util.URIUtil;
 
@@ -32,10 +33,14 @@ class Message {
 
     private final float coverage;
     private final float masterCoverage;
+    private final Map<String, Map<String, PackageCoverage>> coverageByProjectPackage;
+    private final Map<String, Map<String, PackageCoverage>> masterCoverageByProjectPackage;
 
-    public Message(float coverage, float masterCoverage) {
-        this.coverage = Percent.roundFourAfterDigit(coverage);
-        this.masterCoverage = Percent.roundFourAfterDigit(masterCoverage);
+    public Message(float coverage, float masterCoverage, Map<String, Map<String, PackageCoverage>> coverageByProjectPackage, Map<String, Map<String, PackageCoverage>> masterCoverageByProjectPackage) {
+        this.coverage = coverage;
+        this.masterCoverage = masterCoverage;
+        this.coverageByProjectPackage = coverageByProjectPackage;
+        this.masterCoverageByProjectPackage = masterCoverageByProjectPackage;
     }
 
     public String forConsole() {
@@ -53,10 +58,10 @@ class Message {
         if (useShieldsIo) {
             return "[![" + icon + "](" + shieldIoUrl(icon, yellowThreshold, greenThreshold) + ")](" + buildUrl + ")";
         } else {
-            return "[![" + icon + "](" + jenkinsUrl + "/coverage-status-icon/" +
-                    "?coverage=" + coverage +
-                    "&masterCoverage=" + masterCoverage +
-                    ")](" + buildUrl + ")";
+            return "[![" + icon + "](" + jenkinsUrl + "/coverage-status-icon/"
+                    + "?coverage=" + coverage
+                    + "&masterCoverage=" + masterCoverage
+                    + ")](" + buildUrl + ")";
         }
     }
 
